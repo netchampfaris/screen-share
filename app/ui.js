@@ -1,26 +1,19 @@
+const { remote } = require('electron');
 const getStream = require('./stream');
 const webrtc = require('./webrtc');
 const utils = require('../utils');
 const broker = require('./broker');
 const localhost = 'http://localhost:4545';
 
+const originalDimensions = [400, 600];
+const screenShareDimensions = [1280, 720];
+
 module.exports = class ScreenShareUI {
     constructor(mountPoint) {
         this.prepareDOM(mountPoint);
         this.bindEvents();
-    }
-
-    setupBroker() {
-        const host = this.$brokerHost.value;
-
-        if (!host) {
-            return;
-        }
-
-        broker.setup(host + '/broker?id=sseConnect');
-        broker.on('connection', (connectionStatus) => {
-            this.$footerStatus.innerHTML = `connectionStatus: ${connectionStatus}`;
-        });
+        this.$brokerHost.value = 'http://farisansari.in:4545';
+        this.setupBroker();
     }
 
     async startShare() {
@@ -60,9 +53,6 @@ module.exports = class ScreenShareUI {
                 peerConnection.addIceCandidate(JSON.parse(candidate));
             }
         });
-
-        // console.log(stream, peerConnection);
-        // console.log(description);
     }
 
     stopShare() {
@@ -83,6 +73,8 @@ module.exports = class ScreenShareUI {
 
         const peerConnection = webrtc.createPeerConnection();
         peerConnection.onaddstream = (e) => {
+            const [width, height] = screenShareDimensions;
+            remote.getCurrentWindow().setSize(width, height, true);
             this.$video.srcObject = e.stream;
         }
 
@@ -103,6 +95,9 @@ module.exports = class ScreenShareUI {
             if (peerConnection.iceConnectionState === 'disconnected') {
                 this.$video.srcObject = null;
                 this.$video.classList.remove('fullscreen');
+
+                const [width, height] = originalDimensions;
+                remote.getCurrentWindow().setSize(width, height, true);
             }
         }
 
@@ -132,6 +127,19 @@ module.exports = class ScreenShareUI {
 
 
         console.log(shareID);
+    }
+
+    setupBroker() {
+        const host = this.$brokerHost.value;
+
+        if (!host) {
+            return;
+        }
+
+        broker.setup(host + '/broker?id=sseConnect');
+        broker.on('connection', (connectionStatus) => {
+            this.$footerStatus.innerHTML = `connectionStatus: ${connectionStatus}`;
+        });
     }
 
     prepareDOM(mountPoint) {
