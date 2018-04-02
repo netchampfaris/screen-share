@@ -36,7 +36,6 @@ module.exports = class ScreenShareUI {
         })
         .then(response => response.text())
         .then(message => {
-            console.log(message);
             this.$shareStatus.innerHTML = `Send the code ${shareID.bold()} to share your screen. It is copied to your clipboard`;
         })
         .catch(err => {
@@ -53,6 +52,35 @@ module.exports = class ScreenShareUI {
                 peerConnection.addIceCandidate(JSON.parse(candidate));
             }
         });
+
+        // peerConnection.onicecandidate = (e) => {
+        //     if (!e.candidate) return;
+
+        //     broker.send('shareCandidate', {
+        //         roomName: shareID,
+        //         shareCandidate: e.candidate
+        //     });
+        // }
+
+        // this.mousePositionChannel = peerConnection.createDataChannel('mouseposition');
+
+        // this.mousePositionChannel.onopen = e => {
+        //     console.log('opened channel', e);
+        //     this.mousePositionChannel.send('Hey!');
+        // }
+
+        // peerConnection.ondatachannel = ({ channel }) => {
+        //     console.log('ondatachannel');
+        //     channel.onopen = e => {
+        //         console.log('connected to channel', e);
+        //     }
+
+        //     channel.onmessage = e => {
+        //         console.log(e);
+        //     }
+        // }
+
+
     }
 
     stopShare() {
@@ -72,6 +100,19 @@ module.exports = class ScreenShareUI {
         }
 
         const peerConnection = webrtc.createPeerConnection();
+        this.peerConnection = peerConnection;
+
+        // peerConnection.ondatachannel = ({ channel }) => {
+        //     console.log('datachannel')
+        //     channel.onopen = e => {
+        //         console.log('connected to channel', e);
+        //     }
+
+        //     channel.onmessage = e => {
+        //         console.log(e);
+        //     }
+        // }
+
         peerConnection.onaddstream = (e) => {
             const [width, height] = screenShareDimensions;
             remote.getCurrentWindow().setSize(width, height, true);
@@ -90,7 +131,7 @@ module.exports = class ScreenShareUI {
         }
 
         peerConnection.oniceconnectionstatechange = (e) => {
-            console.log(e, peerConnection.iceConnectionState);
+            // console.log(e, peerConnection.iceConnectionState);
 
             if (peerConnection.iceConnectionState === 'disconnected') {
                 this.$video.srcObject = null;
@@ -101,16 +142,11 @@ module.exports = class ScreenShareUI {
             }
         }
 
-        broker.on('shareInfo', (data) => {
-            console.log(data,);
-        });
-
         broker.send('connectShare', {
             roomName: shareID
         })
         .then(res => res.json())
         .then(async res => {
-            console.log(res.shareInfo.shareSDP);
             await peerConnection.setRemoteDescription(new RTCSessionDescription(res.shareInfo.shareSDP));
             const description = await peerConnection.createAnswer();
             await peerConnection.setLocalDescription(description);
@@ -124,9 +160,6 @@ module.exports = class ScreenShareUI {
             console.log(err);
             this.$joinStatus.innerHTML = err;
         });
-
-
-        console.log(shareID);
     }
 
     setupBroker() {

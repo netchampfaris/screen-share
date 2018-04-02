@@ -76,4 +76,14 @@ events['joinCandidate'] = function(data, res) {
     res.sendStatus(200);
 }
 
+events['shareCandidate'] = function(data, res) {
+    const { roomName, shareCandidate } = data;
+
+    sseConnections.forEach(conn => {
+        conn.sseSend('shareCandidate:' + roomName, shareCandidate);
+    });
+
+    res.sendStatus(200);
+}
+
 app.listen(port, () => console.log('Listening on', port));

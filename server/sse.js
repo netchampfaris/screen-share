@@ -23,8 +23,6 @@ data: ${data}
 
         `.trim() + '\n\n';
 
-        console.log(payload)
-
         res.write(payload);
     }
 
